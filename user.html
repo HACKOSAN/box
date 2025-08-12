@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BoxCafe Loyalty</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Tailwind CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-b from-orange-50 to-yellow-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm text-center space-y-4">
+    <h1 class="text-2xl font-bold text-orange-600">☕ BoxCafe Loyalty</h1>
+    <div id="loading" class="text-gray-500">Loading...</div>
+
+    <div id="content" class="hidden space-y-4">
+      <div class="text-lg font-semibold text-gray-800">
+        Free coffee in <span id="remaining" class="text-orange-600">?</span> purchases!
+      </div>
+
+      <div class="w-full bg-gray-200 rounded-full h-4">
+        <div id="progressBar" class="bg-orange-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <div class="bg-orange-100 rounded-xl p-3">
+        <p class="font-medium text-gray-700">Last item:</p>
+        <p id="lastItem" class="text-lg text-orange-700">...</p>
+      </div>
+
+      <div class="bg-yellow-100 rounded-xl p-3">
+        <p class="font-medium text-gray-700">Most purchased:</p>
+        <p id="mostItem" class="text-lg text-yellow-700">...</p>
+      </div>
+
+      <div id="freeDrinkNotice" class="hidden bg-green-100 rounded-xl p-3">
+        <p class="font-medium text-green-700">🎉 You have a free drink waiting!</p>
+        <button id="claimBtn" class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Claim Free Drink</button>
+      </div>
+
+      <div class="text-left">
+        <h2 class="text-md font-semibold text-gray-800 mb-2">Purchase History</h2>
+        <ul id="history" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTzNgpaCQUdq6c3OrXmCUebLbc43HPHdo",
+      authDomain: "box-cafe-test.firebaseapp.com",
+      projectId: "box-cafe-test",
+      storageBucket: "box-cafe-test.firebasestorage.app",
+      messagingSenderId: "278224369453",
+      appId: "1:278224369453:web:ed68af3b0a02dd0999c5a4",
+      measurementId: "G-PTP2V5KPLD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id');
+
+    async function loadUser() {
+      const docRef = doc(db, "users", userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const count = data.totalPurchases || 0;
+        const remaining = 6 - (count % 6);
+        const percent = ((count % 6) / 6) * 100;
+
+        document.getElementById("remaining").textContent = remaining;
+        document.getElementById("lastItem").textContent = data.lastItem || "N/A";
+        document.getElementById("mostItem").textContent = data.mostItem || "N/A";
+        document.getElementById("progressBar").style.width = `${percent}%`;
+
+        const freeDrinkData = data.freeDrink || {};
+        if ((count % 6 === 0 && count > 0) && !freeDrinkData.claimed) {
+          await updateDoc(docRef, {
+            freeDrink: {
+              eligible: true,
+              claimed: false,
+              claimedAt: null
+            }
+          });
+          document.getElementById("freeDrinkNotice").classList.remove("hidden");
+        } else if (freeDrinkData.eligible && !freeDrinkData.claimed) {
+          document.getElementById("freeDrinkNotice").classList.remove("hidden");
+        }
+
+        if (Array.isArray(data.purchaseHistory)) {
+          const historyEl = document.getElementById("history");
+          data.purchaseHistory.slice().reverse().forEach(entry => {
+            const li = document.createElement("li");
+            li.className = "bg-gray-100 p-2 rounded text-sm text-left";
+            li.innerHTML = `
+              <strong>${entry.item}</strong> × ${entry.quantity}<br>
+              <span class='text-gray-500'>${new Date(entry.timestamp?.seconds * 1000).toLocaleString()} - $${entry.price.toFixed(2)}</span>
+            `;
+            historyEl.appendChild(li);
+          });
+        }
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("content").classList.remove("hidden");
+
+        const claimBtn = document.getElementById("claimBtn");
+        if (claimBtn) {
+          claimBtn.addEventListener("click", async () => {
+            await updateDoc(docRef, {
+              freeDrink: {
+                eligible: false,
+                claimed: true,
+                claimedAt: new Date()
+              }
+            });
+            alert("Free drink claimed! Show this to the cashier.");
+            location.reload();
+          });
+        }
+
+      } else {
+        document.getElementById("loading").textContent = "Card not recognized!";
+      }
+    }
+
+    loadUser();
+  </script>
+</body>
+</html>

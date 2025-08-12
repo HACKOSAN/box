@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cashier Panel - BoxCafe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-orange-50 min-h-screen">
+  <div class="max-w-3xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-orange-600 mb-4">💳 Cashier Panel - BoxCafe</h1>
+
+    <!-- UUID Input Section -->
+    <div class="mb-4">
+      <label class="block text-gray-700 mb-1">Enter UUID or Scan Card:</label>
+      <div class="flex space-x-2">
+        <input type="text" id="uuidInput" class="w-full p-2 border rounded" placeholder="Enter UUID">
+        <button id="loadUserBtn" class="bg-orange-500 text-white px-4 py-2 rounded">Enter</button>
+        <button id="scanCardBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Scan NFC</button>
+      </div>
+      <p id="errorMsg" class="text-red-500 text-sm mt-2 hidden"></p>
+    </div>
+
+    <!-- User Info -->
+    <div id="userInfo" class="hidden bg-white rounded shadow p-4 mb-4">
+      <h2 class="text-xl font-bold text-orange-600" id="userName"></h2>
+      <p class="text-gray-600" id="userUID"></p>
+      <p class="mt-2">Free Drink: <span id="userReward"></span></p>
+    </div>
+
+    <!-- Add Drink Section -->
+    <div id="addDrinkSection" class="hidden bg-white rounded shadow p-4 mb-4">
+      <label class="block mb-1 text-gray-700">Drink Name:</label>
+      <input type="text" id="drinkName" class="w-full p-2 border rounded mb-2" placeholder="Latte, Cappuccino, etc.">
+
+      <label class="block mb-1 text-gray-700">Price:</label>
+      <input type="number" id="drinkPrice" class="w-full p-2 border rounded mb-2" placeholder="e.g. 3.50">
+
+      <label class="block mb-1 text-gray-700">Quantity:</label>
+      <input type="number" id="drinkQty" class="w-full p-2 border rounded mb-2" value="1" min="1">
+
+      <button id="addDrinkBtn" class="bg-green-500 text-white px-4 py-2 rounded w-full">Add Drink</button>
+    </div>
+
+    <!-- Purchase History -->
+    <div id="historySection" class="hidden bg-white rounded shadow p-4">
+      <h3 class="text-lg font-semibold mb-2">Purchase History</h3>
+      <ul id="purchaseHistory" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/cashier.js"></script>
+</body>
+</html>
