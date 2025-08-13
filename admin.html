@@ -1,41 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Admin Panel - BoxCafe</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> body{background:#fff7ed} </style>
 </head>
-<body class="bg-orange-50 min-h-screen">
-  <div class="max-w-4xl mx-auto p-4">
-    <h1 class="text-3xl font-bold text-orange-600 mb-4">☕ Admin Panel - BoxCafe</h1>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-orange-600 mb-4">☕ Admin Panel</h1>
 
-    <div id="loginSection" class="space-y-4">
-      <p class="text-gray-700">Enter admin password to continue:</p>
-      <input type="password" id="adminPass" class="w-full p-2 border rounded" placeholder="Password">
-      <p id="loginError" class="text-red-500 text-sm mt-1"></p>
-      <button id="loginBtn" class="bg-orange-500 text-white px-4 py-2 rounded w-full">Continue</button>
+    <!-- Login -->
+    <div id="loginSection" class="bg-white rounded-xl shadow p-4 max-w-md">
+      <p class="text-sm text-slate-700">Enter admin password to continue.</p>
+      <input id="adminPass" type="password" placeholder="Password"
+             class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      <button id="loginBtn" class="mt-3 w-full bg-orange-500 text-white font-semibold py-3 rounded-lg">Continue</button>
+      <p id="loginMsg" class="text-sm mt-2 text-red-600 hidden"></p>
+      <p class="text-xs text-slate-500 mt-2">
+        Optional: store password at <code>settings/admin.password</code>. Fallback is <b>boxadmin</b>.
+      </p>
     </div>
 
-    <div id="adminSection" class="hidden mt-6">
-      <input type="text" id="search" placeholder="Search by name or UID..." class="w-full p-2 border mb-4 rounded">
+    <!-- Dashboard -->
+    <div id="adminSection" class="hidden space-y-4">
+      <!-- Top bar -->
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <input id="search" placeholder="Search by name or UID..." class="w-full p-3 border rounded-lg" />
+          <div class="flex items-center gap-2">
+            <button id="scanNfcBtn" class="bg-green-600 text-white px-4 py-3 rounded-lg">📡 Scan NFC</button>
+            <button id="logoutBtn" class="bg-slate-200 text-slate-800 px-4 py-3 rounded-lg">Logout</button>
+          </div>
+        </div>
+      </div>
 
-      <div id="userList" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      <!-- Users -->
+      <div class="bg-white rounded-xl shadow p-4">
+        <h3 class="font-semibold text-slate-900 mb-3">Users</h3>
+        <div id="userList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        <p id="usersEmpty" class="text-sm text-slate-500 hidden">No users found.</p>
+      </div>
 
-      <div id="userProfile" class="hidden mt-6 bg-white rounded shadow p-4">
-        <button id="closeProfile" class="text-red-500 mb-2">← Back to list</button>
-        <h2 class="text-xl font-bold text-orange-600" id="profileName"></h2>
-        <p class="text-gray-600" id="profileUID"></p>
-        <p class="mt-2">Total Purchases: <span id="profileTotal"></span></p>
-        <p>Most Purchased Item: <span id="profileMost"></span></p>
-        <p>Last Purchase Date: <span id="profileLast"></span></p>
-        <p>Free Drink: <span id="profileReward"></span></p>
-        <h3 class="mt-4 font-semibold">History:</h3>
-        <ul id="profileHistory" class="mt-2 space-y-2 max-h-60 overflow-y-auto"></ul>
+      <!-- Profile -->
+      <div id="userProfile" class="hidden bg-white rounded-xl shadow p-4">
+        <button id="closeProfile" class="text-orange-600 mb-2">← Back to list</button>
+
+        <div class="flex flex-col md:flex-row gap-6">
+          <div class="flex-1">
+            <div class="flex items-center gap-3">
+              <img id="profilePfp" class="w-14 h-14 rounded-full object-cover ring-2 ring-orange-200" src="" alt="" hidden>
+              <div>
+                <h2 id="profileName" class="text-xl font-bold text-slate-900">User</h2>
+                <p id="profileUID" class="text-sm text-slate-500">UID: —</p>
+              </div>
+            </div>
+
+            <!-- quick edits -->
+            <div class="mt-3 grid sm:grid-cols-3 gap-2">
+              <input id="editName" class="p-2 border rounded" placeholder="Edit name">
+              <input id="editPfp" type="file" accept="image/*" class="p-2 border rounded">
+              <button id="saveProfile" class="bg-slate-800 text-white px-3 py-2 rounded">Save</button>
+            </div>
+
+            <div class="mt-4 grid md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Total Purchases</div><div id="profileTotal" class="font-semibold">0</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Most Item</div><div id="profileMost" class="font-semibold">—</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Last Purchase</div><div id="profileLast" class="font-semibold">—</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">All-time Spent</div><div id="profileSpent" class="font-semibold">$0.00</div></div>
+            </div>
+
+            <!-- range analytics -->
+            <div class="mt-3 grid md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Last 30d</div><div id="spent30" class="font-semibold">$0.00</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Last 90d</div><div id="spent90" class="font-semibold">$0.00</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Last 180d</div><div id="spent180" class="font-semibold">$0.00</div></div>
+              <div class="bg-slate-50 rounded p-3"><div class="text-slate-500">Visits</div><div id="visitsCount" class="font-semibold">0</div></div>
+            </div>
+
+            <div class="mt-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span>Progress to Free</span>
+                <span id="profileProgText" class="text-slate-600">0/6</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div id="profileProgBar" class="bg-orange-500 h-3" style="width:0%"></div>
+              </div>
+              <p id="profileReward" class="text-sm mt-2">Free Drink: —</p>
+              <div class="flex gap-2 mt-2">
+                <button id="grantDrink" class="bg-green-600 text-white px-3 py-2 rounded">Grant</button>
+                <button id="revokeDrink" class="bg-red-600 text-white px-3 py-2 rounded">Revoke</button>
+                <button id="exportCsv" class="bg-slate-800 text-white px-3 py-2 rounded">Export CSV</button>
+              </div>
+            </div>
+
+            <h3 class="mt-6 font-semibold">History</h3>
+            <ul id="profileHistory" class="mt-2 space-y-2 max-h-[50vh] overflow-y-auto"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaigns (same as before) -->
+      <div class="bg-white rounded-xl shadow p-4">
+        <h3 class="font-semibold text-slate-900 mb-3">Campaigns & Discounts</h3>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div>
+            <h4 class="font-semibold">Add / Update</h4>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <input id="campTitle" placeholder="Title" class="p-2 border rounded" />
+              <select id="campType" class="p-2 border rounded">
+                <option value="percent">Percent %</option>
+                <option value="fixed">Fixed $</option>
+              </select>
+              <input id="campValue" placeholder="Value" type="number" step="0.01" class="p-2 border rounded" />
+              <label class="inline-flex items-center gap-2"><input id="campActive" type="checkbox" class="w-4 h-4"><span>Active</span></label>
+              <input id="campStart" type="datetime-local" class="p-2 border rounded col-span-1" />
+              <input id="campEnd" type="datetime-local" class="p-2 border rounded col-span-1" />
+            </div>
+            <button id="campSave" class="mt-3 w-full bg-orange-600 text-white py-2 rounded">Save Campaign</button>
+            <p id="campMsg" class="text-sm mt-2 hidden"></p>
+          </div>
+          <div>
+            <h4 class="font-semibold">Existing</h4>
+            <ul id="campList" class="mt-2 divide-y"></ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="scripts/admin.js"></script>
+  <script type="module" src="./scripts/admin.js"></script>
 </body>
 </html>

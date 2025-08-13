@@ -1,135 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>BoxCafe Loyalty</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Tailwind CSS CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>User Panel - BoxCafe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> body{background:#fff7ed} </style>
 </head>
-<body class="bg-gradient-to-b from-orange-50 to-yellow-100 min-h-screen flex items-center justify-center">
-  <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm text-center space-y-4">
-    <h1 class="text-2xl font-bold text-orange-600">☕ BoxCafe Loyalty</h1>
-    <div id="loading" class="text-gray-500">Loading...</div>
+<body class="min-h-screen">
+  <div class="max-w-4xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-orange-600 mb-4">☕ Your BoxCafe</h1>
 
-    <div id="content" class="hidden space-y-4">
-      <div class="text-lg font-semibold text-gray-800">
-        Free coffee in <span id="remaining" class="text-orange-600">?</span> purchases!
+    <!-- Load by query or manual -->
+    <div class="bg-white rounded-xl shadow p-4 mb-4">
+      <p class="text-sm text-slate-600">Open via your personal link (e.g. <code>?id=0001</code>) or enter your ID:</p>
+      <div class="mt-2 flex gap-2">
+        <input id="uuidInput" type="text" inputmode="numeric" placeholder="e.g., 0001"
+               class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" />
+        <button id="loadBtn" class="px-4 py-3 rounded-lg bg-orange-500 text-white font-semibold">Show</button>
+      </div>
+      <p id="uuidError" class="text-sm text-red-600 mt-2 hidden"></p>
+    </div>
+
+    <!-- Summary -->
+    <div id="userCard" class="bg-white rounded-xl shadow p-4 mb-4 hidden">
+      <div class="flex items-center gap-3">
+        <img id="userPfp" class="w-12 h-12 rounded-full object-cover ring-2 ring-orange-200" src="" alt="" hidden>
+        <div>
+          <h2 id="userName" class="text-xl font-bold text-slate-900">User</h2>
+          <p id="userUID" class="text-sm text-slate-500">UID: —</p>
+        </div>
+        <div class="ml-auto text-sm">
+          <span class="font-semibold">Free Drink:</span>
+          <span id="freeStatus" class="font-semibold">—</span>
+        </div>
       </div>
 
-      <div class="w-full bg-gray-200 rounded-full h-4">
-        <div id="progressBar" class="bg-orange-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+      <div class="mt-4">
+        <div class="flex justify-between text-sm mb-1">
+          <span>Progress to Free</span>
+          <span id="progressText" class="text-slate-600">0/6</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div id="progressBar" class="bg-orange-500 h-3" style="width:0%"></div>
+        </div>
+        <p id="drinksLeft" class="text-sm text-slate-600 mt-2">Drinks left: —</p>
       </div>
 
-      <div class="bg-orange-100 rounded-xl p-3">
-        <p class="font-medium text-gray-700">Last item:</p>
-        <p id="lastItem" class="text-lg text-orange-700">...</p>
+      <div id="analytics" class="mt-4 grid sm:grid-cols-3 gap-3 text-sm">
+        <div class="bg-slate-50 rounded-lg p-3"><div class="text-slate-500">Total Spent</div><div id="totalSpent" class="font-semibold">$0.00</div></div>
+        <div class="bg-slate-50 rounded-lg p-3"><div class="text-slate-500">Most Purchased</div><div id="mostItem" class="font-semibold">—</div></div>
+        <div class="bg-slate-50 rounded-lg p-3"><div class="text-slate-500">Last Purchase</div><div id="lastPurchase" class="font-semibold">—</div></div>
       </div>
+      <p class="mt-2 text-xs text-slate-500">Free drinks don’t expire or stack. Redeem at the cashier when you want.</p>
+    </div>
 
-      <div class="bg-yellow-100 rounded-xl p-3">
-        <p class="font-medium text-gray-700">Most purchased:</p>
-        <p id="mostItem" class="text-lg text-yellow-700">...</p>
-      </div>
-
-      <div id="freeDrinkNotice" class="hidden bg-green-100 rounded-xl p-3">
-        <p class="font-medium text-green-700">🎉 You have a free drink waiting!</p>
-        <button id="claimBtn" class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Claim Free Drink</button>
-      </div>
-
-      <div class="text-left">
-        <h2 class="text-md font-semibold text-gray-800 mb-2">Purchase History</h2>
-        <ul id="history" class="space-y-2 max-h-60 overflow-y-auto"></ul>
-      </div>
+    <!-- History -->
+    <div id="historyCard" class="bg-white rounded-xl shadow p-4 hidden">
+      <h3 class="font-semibold text-slate-900">Purchase History</h3>
+      <ul id="historyList" class="mt-3 space-y-2 max-h-[60vh] overflow-y-auto"></ul>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDTzNgpaCQUdq6c3OrXmCUebLbc43HPHdo",
-      authDomain: "box-cafe-test.firebaseapp.com",
-      projectId: "box-cafe-test",
-      storageBucket: "box-cafe-test.firebasestorage.app",
-      messagingSenderId: "278224369453",
-      appId: "1:278224369453:web:ed68af3b0a02dd0999c5a4",
-      measurementId: "G-PTP2V5KPLD"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('id');
-
-    async function loadUser() {
-      const docRef = doc(db, "users", userId);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const count = data.totalPurchases || 0;
-        const remaining = 6 - (count % 6);
-        const percent = ((count % 6) / 6) * 100;
-
-        document.getElementById("remaining").textContent = remaining;
-        document.getElementById("lastItem").textContent = data.lastItem || "N/A";
-        document.getElementById("mostItem").textContent = data.mostItem || "N/A";
-        document.getElementById("progressBar").style.width = `${percent}%`;
-
-        const freeDrinkData = data.freeDrink || {};
-        if ((count % 6 === 0 && count > 0) && !freeDrinkData.claimed) {
-          await updateDoc(docRef, {
-            freeDrink: {
-              eligible: true,
-              claimed: false,
-              claimedAt: null
-            }
-          });
-          document.getElementById("freeDrinkNotice").classList.remove("hidden");
-        } else if (freeDrinkData.eligible && !freeDrinkData.claimed) {
-          document.getElementById("freeDrinkNotice").classList.remove("hidden");
-        }
-
-        if (Array.isArray(data.purchaseHistory)) {
-          const historyEl = document.getElementById("history");
-          data.purchaseHistory.slice().reverse().forEach(entry => {
-            const li = document.createElement("li");
-            li.className = "bg-gray-100 p-2 rounded text-sm text-left";
-            li.innerHTML = `
-              <strong>${entry.item}</strong> × ${entry.quantity}<br>
-              <span class='text-gray-500'>${new Date(entry.timestamp?.seconds * 1000).toLocaleString()} - $${entry.price.toFixed(2)}</span>
-            `;
-            historyEl.appendChild(li);
-          });
-        }
-
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("content").classList.remove("hidden");
-
-        const claimBtn = document.getElementById("claimBtn");
-        if (claimBtn) {
-          claimBtn.addEventListener("click", async () => {
-            await updateDoc(docRef, {
-              freeDrink: {
-                eligible: false,
-                claimed: true,
-                claimedAt: new Date()
-              }
-            });
-            alert("Free drink claimed! Show this to the cashier.");
-            location.reload();
-          });
-        }
-
-      } else {
-        document.getElementById("loading").textContent = "Card not recognized!";
-      }
-    }
-
-    loadUser();
-  </script>
+  <!-- IMPORTANT: keep type="module" so imports work -->
+  <script type="module" src="./scripts/user.js"></script>
 </body>
 </html>
